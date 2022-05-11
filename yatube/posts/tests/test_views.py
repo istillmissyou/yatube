@@ -120,7 +120,7 @@ class PostPagesTest(TestCase):
         )
         self.assertEqual(Follow.objects.count(), 0)
         self.assertFalse(Follow.objects.filter(user=self.user,
-                                              author=self.user2).exists())
+                                               author=self.user2).exists())
 
 
 class PaginatorViewsTest(TestCase):
