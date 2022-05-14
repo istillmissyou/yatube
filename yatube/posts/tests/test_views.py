@@ -20,6 +20,7 @@ class PostPagesTest(TestCase):
         super().setUpClass()
         cls.user = User.objects.create_user(username='Danil')
         cls.user2 = User.objects.create_user(username='Polina')
+        cls.user3 = User.objects.create_user(username='Anya')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
@@ -29,6 +30,10 @@ class PostPagesTest(TestCase):
             author=cls.user,
             text='Тестовый текст',
             group=cls.group
+        )
+        cls.follow = Follow.objects.create(
+            user=cls.user,
+            author=cls.user2
         )
 
     def setUp(self):
@@ -94,7 +99,7 @@ class PostPagesTest(TestCase):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
-    def test_cache_index_page(self):
+    def test_cache_index_page(self):  # undone
         response = self.client.get(reverse('posts:index'))
         Post.objects.all().delete()
         self.assertTrue(self.post.text.encode() in response.content)
@@ -102,24 +107,27 @@ class PostPagesTest(TestCase):
         response = self.client.get(reverse('posts:index'))
         self.assertFalse(self.post.text.encode() in response.content)
 
-    def test_follow_and_unfollow_author(self):
+    def test_follow_author(self):
         follow_count = Follow.objects.count()
         self.authorized_client.get(
             reverse(
                 'posts:profile_follow',
-                kwargs={'username': self.user2.username}
+                kwargs={'username': self.user3.username}
             )
         )
         self.assertEqual(Follow.objects.count(), follow_count + 1)
         self.assertTrue(Follow.objects.filter(user=self.user,
-                                              author=self.user2).exists())
+                                              author=self.user3).exists())
+
+    def test_unfollow_author(self):
+        follow_count = Follow.objects.count()
         self.authorized_client.get(
             reverse(
                 'posts:profile_unfollow',
                 kwargs={'username': self.user2.username}
             )
         )
-        self.assertEqual(Follow.objects.count(), 0)
+        self.assertEqual(Follow.objects.count(), follow_count - 1)
         self.assertFalse(Follow.objects.filter(user=self.user,
                                                author=self.user2).exists())
 

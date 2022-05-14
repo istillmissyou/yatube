@@ -7,12 +7,14 @@ from .utils import page_paginator
 
 
 def index(request):
-    post_list = Post.objects.all().order_by('-pub_date')
-    page_obj = page_paginator(request, post_list)
+    post_list = (
+        Post.objects.select_related('author', 'group')
+        .prefetch_related('comments').all().order_by('-pub_date')
+    )
     context = {
         'title': 'Последние обновления на сайте',
         'text': 'Это главная страница проекта Yatube',
-        'page_obj': page_obj
+        'page_obj': page_paginator(request, post_list)
     }
     return render(request, 'posts/index.html', context)
 
@@ -20,10 +22,9 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     post_list = Post.objects.filter(group=group).order_by('-pub_date')
-    page_obj = page_paginator(request, post_list)
     context = {
         'group': group,
-        'page_obj': page_obj
+        'page_obj': page_paginator(request, post_list)
     }
     return render(request, 'posts/group_list.html', context)
 
@@ -31,8 +32,6 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     profile_posts = author.posts.all()
-    post_count = profile_posts.count()
-    page_obj = page_paginator(request, profile_posts)
     if request.user.is_authenticated:
         following = Follow.objects.filter(
             user=request.user,
@@ -40,12 +39,11 @@ def profile(request, username):
         ).exists()
     else:
         following = False
-
     context = {
         'author': author,
-        'page_obj': page_obj,
-        'post_count': post_count,
-        'following': following,
+        'page_obj': page_paginator(request, profile_posts),
+        'post_count': profile_posts.count(),
+        'following': following
     }
     return render(request, 'posts/profile.html', context)
 
@@ -53,16 +51,15 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     comments = Comment.objects.filter(post=post)
-    post_count = post.author.posts.count()
     form = CommentForm(
         request.POST or None,
         instance=post
     )
     context = {
         'post': post,
-        'post_count': post_count,
+        'post_count': post.author.posts.count(),
         'form': form,
-        'comments': comments,
+        'comments': comments
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -74,7 +71,6 @@ def post_create(request):
         files=request.FILES or None
     )
     is_edit = False
-
     if form.is_valid():
         form = form.save(commit=False)
         form.author = request.user
@@ -82,7 +78,7 @@ def post_create(request):
         return redirect('posts:profile', request.user.username)
     context = {
         'form': form,
-        'is_edit': is_edit,
+        'is_edit': is_edit
     }
     return render(request, 'posts/create_post.html', context)
 
@@ -92,8 +88,6 @@ def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if request.user != post.author:
         return redirect('posts:post_detail', post.pk)
-
-    is_edit = True
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
@@ -101,10 +95,9 @@ def post_edit(request, post_id):
     )
     context = {
         'form': form,
-        'is_edit': is_edit,
-        'post_id': post_id,
+        'is_edit': True,
+        'post_id': post_id
     }
-
     if form.is_valid():
         form.save()
         return redirect('posts:post_detail', post.pk)
@@ -125,22 +118,22 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    post_list = Post.objects.filter(author__following__user=request.user)
-    page_obj = page_paginator(request, post_list)
+    post_list = Post.objects.filter(
+        author__following__user=request.user
+    ).order_by('-pub_date')
     context = {
         'title': 'Ваша лента',
-        'page_obj': page_obj,
+        'page_obj': page_paginator(request, post_list)
     }
     return render(request, 'posts/follow.html', context)
 
 
 @login_required
 def profile_follow(request, username):
-    user = get_object_or_404(User, username=request.user.username)
     author = get_object_or_404(User, username=username)
-    if not Follow.objects.filter(user=user, author=author) and user != author:
-        Follow.objects.create(user=user,
-                              author=author)
+    if request.user != author:
+        Follow.objects.get_or_create(user=request.user,
+                                     author=author)
     return redirect('posts:profile', username=username)
 
 

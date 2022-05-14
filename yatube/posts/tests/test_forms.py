@@ -64,7 +64,6 @@ class PostFormTests(TestCase):
         form_data = {
             'text': self.post.text,
             'group': self.group.id,
-            'author': self.user,
             'image': self.post.image
         }
         response = self.authorized_client.post(
@@ -80,14 +79,12 @@ class PostFormTests(TestCase):
         post = response.context['page_obj'][0]
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group_id, form_data['group'])
-        self.assertEqual(post.author, self.user)
         self.assertEqual(post.image, self.post.image)
 
     def test_edit_post(self):
         form_data = {
             'text': self.post.text,
             'group': self.group.id,
-            'author': self.user
         }
         response = self.authorized_client.post(
             reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
@@ -105,9 +102,7 @@ class PostFormTests(TestCase):
     def test_create_comment(self):
         comments_count = Comment.objects.count()
         form_data = {
-            'text': self.comment.text,
-            'post': self.comment.post,
-            'author': self.comment.author
+            'text': self.comment.text
         }
         response = self.authorized_client.post(
             reverse(
@@ -125,3 +120,5 @@ class PostFormTests(TestCase):
             )
         )
         self.assertEqual(Comment.objects.count(), comments_count + 1)
+        comment = response.context['comments'][0]
+        self.assertEqual(comment.text, form_data['text'])
