@@ -101,7 +101,7 @@ class PostPagesTest(TestCase):
 
     def test_cache_index_page(self):  # undone
         response = self.client.get(reverse('posts:index'))
-        Post.objects.all().delete()
+        Post.objects.get(id=self.post.id).delete()
         self.assertTrue(self.post.text.encode() in response.content)
         cache.clear()
         response = self.client.get(reverse('posts:index'))
