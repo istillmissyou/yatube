@@ -99,13 +99,19 @@ class PostPagesTest(TestCase):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
-    def test_cache_index_page(self):  # undone
+    def test_cache_index_page(self):
+        Post.objects.all().delete()
         response = self.client.get(reverse('posts:index'))
-        Post.objects.get(id=self.post.id).delete()
-        self.assertTrue(self.post.text.encode() in response.content)
+        self.assertTrue(
+            self.post.text.encode() in response.content,
+            self.post.text
+        )
         cache.clear()
         response = self.client.get(reverse('posts:index'))
-        self.assertFalse(self.post.text.encode() in response.content)
+        self.assertFalse(
+            self.post.text.encode() in response.content,
+            self.post.text
+        )
 
     def test_follow_author(self):
         follow_count = Follow.objects.count()

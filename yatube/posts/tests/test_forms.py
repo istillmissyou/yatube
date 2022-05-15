@@ -122,3 +122,4 @@ class PostFormTests(TestCase):
         self.assertEqual(Comment.objects.count(), comments_count + 1)
         comment = response.context['comments'][0]
         self.assertEqual(comment.text, form_data['text'])
+        self.assertEqual(comment.post.id, self.comment.post.id)
