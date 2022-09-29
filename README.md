@@ -12,28 +12,28 @@ For Windows users:
 python -m venv venv
 source venv/Scripts/activate
 python -m pip install --upgrade pip
-``
+```
 - Install dependencies from the file requirements.txt
-``
+```
 pip install -r requirements.txt
-``
+```
 - Go to the directory with the file manage.py run the commands:
 Perform migrations:
-``
+```
 python manage.py migrate
 ```
 Create a super user:
-``
+```
 python manage.py createsuperuser
-``
+```
 Collect static:
-``
+```
 python manage.py collectstatic
-``
+```
 Project launch:
-``
+```
 python manage.py runserver
-``
+```
 
 ### Authors
 Danil Shtun
